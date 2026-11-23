@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TP 3 — Visualizador Interactivo: Árbol AVL, Heap y Heap Sort (UNViMe)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0b1120;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .card {
+      background: #131c31;
+      border: 1px solid #24324f;
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    }
+    .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+    .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #38bdf8; }
+    h1 { font-size: 20px; font-weight: 700; color: #f8fafc; margin-top: 2px; }
+    .subtitle { font-size: 12.5px; color: #94a3b8; margin-top: 3px; }
+    .tabs { display: flex; gap: 6px; background: #0b1120; padding: 5px; border-radius: 10px; border: 1px solid #24324f; }
+    .tab-btn {
+      padding: 8px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600; border: none;
+      cursor: pointer; background: transparent; color: #94a3b8; transition: 0.2s;
+    }
+    .tab-btn.active { background: #2563eb; color: #ffffff; }
+    .tab-btn:hover:not(.active) { color: #f8fafc; background: #1e293b; }
+
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .row-between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .divider { border-top: 1px solid #24324f; padding-top: 12px; margin-top: 12px; }
+
+    input[type="number"], input[type="text"] {
+      background: #0b1120; border: 1px solid #334155; color: #f8fafc;
+      border-radius: 8px; padding: 7px 11px; font-size: 12.5px; outline: none;
+    }
+    input:focus { border-color: #38bdf8; }
+
+    .btn {
+      padding: 7px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+      border: 1px solid transparent; cursor: pointer; transition: 0.18s;
+    }
+    .btn:hover { filter: brightness(1.12); }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-danger  { background: #dc2626; color: #fff; }
+    .btn-warn    { background: #f59e0b; color: #0b1120; }
+    .btn-ghost   { background: #0f172a; color: #cbd5e1; border-color: #334155; }
+    .btn-preset  { background: #0b1120; color: #cbd5e1; border-color: #334155; padding: 5px 10px; font-size: 12px; }
+    .btn-preset.highlight { border-color: #f59e0b; color: #fbbf24; }
+
+    .badge {
+      padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700;
+      background: #2563eb; color: #fff; white-space: nowrap;
+    }
+    .badge-warn { background: #f59e0b; color: #0b1120; }
+    .badge-ok   { background: #16a34a; color: #fff; }
+    .badge-mono { background: #0b1120; border: 1px solid #334155; color: #cbd5e1; font-family: Consolas, monospace; }
+
+    .step-text { font-size: 13px; color: #f1f5f9; font-weight: 500; }
+    .stats { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: #94a3b8; }
+    .stats strong { color: #38bdf8; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #cbd5e1; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+    .svg-wrap { width: 100%; overflow-x: auto; background: #0b1120; border-radius: 10px; border: 1px solid #1e293b; padding: 6px; margin-top: 10px; }
+    svg { width: 100%; display: block; user-select: none; }
+
+    .arr-wrap { display: flex; flex-wrap: wrap; gap: 8px; min-height: 56px; align-items: center; margin-top: 8px; }
+    .arr-cell {
+      width: 52px; height: 52px; border-radius: 9px; border: 2px solid #334155;
+      background: #0b1120; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-family: Consolas, monospace; cursor: pointer; transition: 0.2s;
+    }
+    .arr-cell .idx { font-size: 10px; color: #94a3b8; }
+    .arr-cell .val { font-size: 14px; font-weight: 700; color: #f8fafc; }
+    .cell-active { background: rgba(124, 58, 237, 0.28); border-color: #a78bfa; }
+    .cell-swap   { background: rgba(245, 158, 11, 0.28); border-color: #fbbf24; transform: scale(1.07); }
+    .cell-ok     { background: rgba(34, 197, 94, 0.25); border-color: #4ade80; }
+    .cell-heap   { background: rgba(59, 130, 246, 0.20); border-color: #60a5fa; }
+
+    .hidden { display: none !important; }
+    .mono { font-family: Consolas, monospace; color: #38bdf8; }
+    .ml-auto { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado -->
+    <div class="card header">
+      <div>
+        <div class="eyebrow">Universidad Nacional de Villa Mercedes — Unidad 6: Transforma y Conquista</div>
+        <h1>Visualizador Interactivo: Árbol AVL, Heap Binario y Heap Sort</h1>
+        <div class="subtitle">Simulador paso a paso del TP N° 3 — Observá en vivo cómo cambian los árboles, el Factor de Balance (FB), las rotaciones y los intercambios.</div>
+      </div>
+      <div class="tabs">
+        <button id="tab-avl" class="tab-btn active" onclick="switchTab('avl')">1. Árbol AVL</button>
+        <button id="tab-heap" class="tab-btn" onclick="switchTab('heap')">2. Heap (Max/Min)</button>
+        <button id="tab-heapsort" class="tab-btn" onclick="switchTab('heapsort')">3. Heap Sort</button>
+      </div>
+    </div>
+
+    <!-- ==================== PANEL 1: ÁRBOL AVL ==================== -->
+    <div id="panel-avl" class="container" style="padding:0;">
+      <div class="card">
+        <div class="row">
+          <input id="avl-input" type="number" placeholder="Número (ej: 25)" style="width:140px;" />
+          <button class="btn btn-primary" onclick="avlInsertAction()">+ Insertar</button>
+          <button class="btn btn-ghost" onclick="avlSearchAction()">Buscar O(log n)</button>
+          <button class="btn btn-danger" onclick="avlDeleteAction()">Eliminar</button>
+          <button class="btn btn-success" onclick="avlInOrderAction()">Recorrido InOrden</button>
+          <button class="btn btn-ghost" onclick="avlInsertRandom()">+ Aleatorio</button>
+          <button class="btn btn-ghost ml-auto" onclick="avlReset()">Limpiar</button>
+        </div>
+        <div class="row divider">
+          <span style="font-size:12px; color:#94a3b8; font-weight:600;">Ejemplos de la Unidad 6:</span>
+          <button class="btn btn-preset" onclick="avlLoadPreset([10,20,30])">Simple Izq (10,20,30)</button>
+          <button class="btn btn-preset" onclick="avlLoadPreset([30,20,10])">Simple Der (30,20,10)</button>
+          <button class="btn btn-preset" onclick="avlLoadPreset([20,10,15])">Doble LR (20,10,15)</button>
+          <button class="btn btn-preset" onclick="avlLoadPreset([10,30,20])">Doble RL (10,30,20)</button>
+          <button class="btn btn-preset highlight" onclick="avlLoadPreset([60,40,70,30,45,50])">Ejercicio Profe Diap. 13 (60,40,70,30,45,50)</button>
+          <button class="btn btn-preset" onclick="avlLoadPreset([30,20,40,10,25,5])">Subárbol 25 (Diap. 11)</button>
+        </div>
+      </div>
+
+      <div class="card row-between">
+        <div class="row" style="flex:1;">
+          <span id="avl-step-badge" class="badge">Paso 0/0</span>
+          <span id="avl-step-desc" class="step-text">Insertá números o elegí un ejemplo de clase para ver las rotaciones.</span>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="avlPrevStep()">◀ Anterior</button>
+          <button id="avl-play-btn" class="btn btn-primary" onclick="avlTogglePlay()">▶ Play</button>
+          <button class="btn btn-ghost" onclick="avlNextStep()">Siguiente ▶</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <div class="stats">
+            <span>Nodos: <strong id="avl-stat-nodos">0</strong></span>
+            <span>Altura: <strong id="avl-stat-altura">0</strong></span>
+            <span>Rotaciones: <strong id="avl-stat-rot" style="color:#fbbf24;">0</strong></span>
+            <span>Fórmula: <span class="mono">FB = Altura(Izq) - Altura(Der)</span></span>
+          </div>
+          <div class="legend">
+            <span><span class="dot" style="background:#22c55e;"></span>Equilibrado (FB ∈ {-1,0,1})</span>
+            <span><span class="dot" style="background:#ef4444;"></span>Desequilibrado (|FB|=2)</span>
+            <span><span class="dot" style="background:#f59e0b;"></span>Activo / Visitado</span>
+          </div>
+        </div>
+        <div class="svg-wrap">
+          <svg id="avl-svg" viewBox="0 0 960 390" style="height:370px;"></svg>
+        </div>
+        <div class="divider" style="font-size:12.5px;">
+          <span style="color:#94a3b8; font-weight:600;">Recorrido InOrden (Izquierda → Nodo → Derecha): </span>
+          <span id="avl-inorder-vals" class="mono">[]</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PANEL 2: HEAP BINARIO ==================== -->
+    <div id="panel-heap" class="container hidden" style="padding:0;">
+      <div class="card">
+        <div class="row">
+          <div class="tabs" style="padding:3px;">
+            <button id="btn-maxheap" class="tab-btn active" onclick="setHeapMode(true)">Max-Heap (Padre ≥ Hijos)</button>
+            <button id="btn-minheap" class="tab-btn" onclick="setHeapMode(false)">Min-Heap (Padre ≤ Hijos)</button>
+          </div>
+          <input id="heap-input" type="number" placeholder="Valor (ej: 45)" style="width:125px;" />
+          <button class="btn btn-primary" onclick="heapInsertAction()">+ Insertar (Heapify Up)</button>
+          <button class="btn btn-danger" onclick="heapExtractAction()">Eliminar Raíz (Heapify Down)</button>
+          <button class="btn btn-ghost" onclick="heapSearchAction()">Buscar O(n)</button>
+          <button class="btn btn-ghost" onclick="heapInsertRandom()">+ Aleatorio</button>
+          <button class="btn btn-ghost ml-auto" onclick="heapReset()">Limpiar</button>
+        </div>
+        <div class="row divider">
+          <span style="font-size:12px; color:#94a3b8; font-weight:600;">Ejemplos de la Unidad 6:</span>
+          <button class="btn btn-preset highlight" onclick="heapLoadPreset([9,3,5,1,4,2,7], true)">Diap. 23: Insertar 7 (Heapify Up)</button>
+          <button class="btn btn-preset" onclick="heapLoadPreset([100,19,36,17,3,25,1,2,7], true)">Diap. 22: Max-Heap</button>
+          <button class="btn btn-preset" onclick="heapLoadPreset([12,10,9,5,6,1], false)">Diap. 21: Min-Heap</button>
+        </div>
+      </div>
+
+      <div class="card row-between">
+        <div class="row" style="flex:1;">
+          <span id="heap-step-badge" class="badge">Paso 0/0</span>
+          <span id="heap-step-desc" class="step-text">Insertá valores o elegí un ejemplo para ver árbol y arreglo sincronizados.</span>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="heapPrevStep()">◀ Anterior</button>
+          <button id="heap-play-btn" class="btn btn-primary" onclick="heapTogglePlay()">▶ Play</button>
+          <button class="btn btn-ghost" onclick="heapNextStep()">Siguiente ▶</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <div class="stats">
+            <span>Elementos (n): <strong id="heap-stat-n">0</strong></span>
+            <span>Raíz [0]: <strong id="heap-stat-root" style="color:#4ade80;">-</strong></span>
+            <span>Altura aprox.: <strong id="heap-stat-h">0</strong> niveles</span>
+          </div>
+          <div class="mono" style="font-size:12px; color:#94a3b8;">
+            Padre(i) = ⌊(i-1)/2⌋ &nbsp;|&nbsp; Izq(i) = 2i+1 &nbsp;|&nbsp; Der(i) = 2i+2
+          </div>
+        </div>
+        <div class="svg-wrap">
+          <svg id="heap-svg" viewBox="0 0 960 300" style="height:285px;"></svg>
+        </div>
+        <div class="divider">
+          <div style="font-size:12px; color:#94a3b8; font-weight:600;">Representación en Arreglo Contiguo (pasá el mouse sobre cualquier casillero para ver las fórmulas):</div>
+          <div id="heap-array-container" class="arr-wrap"></div>
+          <div id="heap-formula-hover" class="mono" style="font-size:12px; margin-top:8px; min-height:18px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PANEL 3: HEAP SORT ==================== -->
+    <div id="panel-heapsort" class="container hidden" style="padding:0;">
+      <div class="card row-between">
+        <div class="row">
+          <button class="btn btn-primary" onclick="hsLoad([2,5,4,8,9,10,11])">Ejemplo Diap. 24-29 [2,5,4,8,9,10,11]</button>
+          <button class="btn btn-ghost" onclick="hsLoadRandom()">Aleatorio (9 elem.)</button>
+          <input id="hs-custom-input" type="text" placeholder="Ej: 15, 3, 22, 8, 1, 19" style="width:185px;" />
+          <button class="btn btn-ghost" onclick="hsLoadCustom()">Cargar</button>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="hsPrev()">◀ Anterior</button>
+          <button id="hs-play-btn" class="btn btn-success" onclick="hsTogglePlay()">▶ Play Animación</button>
+          <button class="btn btn-ghost" onclick="hsNext()">Siguiente ▶</button>
+          <button class="btn btn-ghost" onclick="hsGoTo(0)">↺ Inicio</button>
+        </div>
+      </div>
+
+      <div class="card row">
+        <span id="hs-phase-badge" class="badge badge-warn">FASE 1: Build Max-Heap O(n)</span>
+        <span id="hs-step-badge" class="badge badge-mono">Paso 0/0</span>
+        <span id="hs-step-desc" class="step-text"></span>
+      </div>
+
+      <div class="card">
+        <div class="legend">
+          <span><span class="dot" style="background:#3b82f6;"></span>Dentro del Max-Heap activo</span>
+          <span><span class="dot" style="background:#f59e0b;"></span>Comparando / Intercambiando (Swap)</span>
+          <span><span class="dot" style="background:#22c55e;"></span>Ya ordenado y congelado al final</span>
+        </div>
+        <div class="svg-wrap">
+          <svg id="hs-svg" viewBox="0 0 960 295" style="height:280px;"></svg>
+        </div>
+        <div class="divider">
+          <div style="font-size:12px; color:#94a3b8; font-weight:600;">Arreglo In-Place (Memoria auxiliar O(1) — se ordena de derecha a izquierda):</div>
+          <div id="hs-array-container" class="arr-wrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+function switchTab(name) {
+  ['avl', 'heap', 'heapsort'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+  });
+  stopAllTimers();
+}
+
+let avlRoot = null, avlRotations = 0, avlSteps = [], avlStepIdx = -1, avlTimer = null;
+let heapArr = [], isMaxHeap = true, heapSteps = [], heapStepIdx = -1, heapTimer = null;
+let hsSteps = [], hsIdx = 0, hsTimer = null;
+
+function stopAllTimers() {
+  if (avlTimer) { clearInterval(avlTimer); avlTimer = null; document.getElementById('avl-play-btn').textContent = '▶ Play'; }
+  if (heapTimer) { clearInterval(heapTimer); heapTimer = null; document.getElementById('heap-play-btn').textContent = '▶ Play'; }
+  if (hsTimer) { clearInterval(hsTimer); hsTimer = null; document.getElementById('hs-play-btn').textContent = '▶ Play Animación'; }
+}
+
+// ==================== ÁRBOL AVL ====================
+function cloneTree(n) { return n ? { val: n.val, h: n.h, left: cloneTree(n.left), right: cloneTree(n.right) } : null; }
+function getH(n) { return n ? n.h : 0; }
+function getFB(n) { return n ? getH(n.left) - getH(n.right) : 0; }
+function updH(n) { if (n) n.h = 1 + Math.max(getH(n.left), getH(n.right)); }
+function countNodes(n) { return n ? 1 + countNodes(n.left) + countNodes(n.right) : 0; }
+function getInOrder(n, arr = []) { if (!n) return arr; getInOrder(n.left, arr); arr.push(n.val); getInOrder(n.right, arr); return arr; }
+
+function pushAvlStep(desc, highlightVals = [], dangerVals = [], okVals = []) {
+  avlSteps.push({ tree: cloneTree(avlRoot), rotations: avlRotations, desc, highlightVals: [...highlightVals], dangerVals: [...dangerVals], okVals: [...okVals] });
+}
+
+function rotRightRaw(y) { const x = y.left, T2 = x.right; x.right = y; y.left = T2; updH(y); updH(x); return x; }
+function rotLeftRaw(x)  { const y = x.right, T2 = y.left; y.left = x; x.right = T2; updH(x); updH(y); return y; }
+
+function avlInsertWithSteps(val) {
+  if (!avlRoot) {
+    avlRoot = { val, h: 1, left: null, right: null };
+    pushAvlStep(`Insertamos ${val} como la raíz inicial del Árbol AVL.`, [val]);
+    return;
+  }
+  let path = [], curr = avlRoot;
+  while (curr) {
+    path.push(curr);
+    if (val === curr.val) { pushAvlStep(`El valor ${val} ya existe en el árbol.`, [val]); return; }
+    curr = val < curr.val ? curr.left : curr.right;
+  }
+  const parent = path[path.length - 1];
+  const newNode = { val, h: 1, left: null, right: null };
+  if (val < parent.val) parent.left = newNode; else parent.right = newNode;
+  for (let i = path.length - 1; i >= 0; i--) updH(path[i]);
+
+  let unbIdx = -1;
+  for (let i = path.length - 1; i >= 0; i--) { if (Math.abs(getFB(path[i])) > 1) { unbIdx = i; break; } }
+
+  if (unbIdx === -1) {
+    pushAvlStep(`Insertamos ${val} como hijo ${val < parent.val ? 'izquierdo' : 'derecho'} de ${parent.val}. Todos los nodos mantienen FB ∈ {-1, 0, +1}.`, [val]);
+    return;
+  }
+
+  const z = path[unbIdx], fbZ = getFB(z), child = fbZ > 1 ? z.left : z.right, fbC = getFB(child);
+  let rotName = '';
+  if (fbZ > 1 && fbC >= 0) rotName = 'Rotación SIMPLE a la DERECHA (mismo signo +2 / +1)';
+  else if (fbZ < -1 && fbC <= 0) rotName = 'Rotación SIMPLE a la IZQUIERDA (mismo signo -2 / -1)';
+  else if (fbZ > 1 && fbC < 0) rotName = 'Rotación DOBLE Izquierda + Derecha (distinto signo +2 / -1)';
+  else rotName = 'Rotación DOBLE Derecha + Izquierda (distinto signo -2 / +1)';
+
+  pushAvlStep(`Insertamos ${val} → ¡DESEQUILIBRIO en ${z.val} (FB=${fbZ > 0 ? '+'+fbZ : fbZ}) con hijo ${child.val} (FB=${fbC > 0 ? '+'+fbC : fbC})! Se dispara: ${rotName}.`, [val], [z.val, child.val]);
+
+  const replaceInParent = (oldN, newN) => {
+    if (unbIdx === 0) avlRoot = newN;
+    else { const p = path[unbIdx - 1]; if (p.left === oldN) p.left = newN; else p.right = newN; }
+  };
+
+  if (fbZ > 1 && fbC < 0) {
+    z.left = rotLeftRaw(z.left); avlRotations++;
+    for (let i = unbIdx; i >= 0; i--) updH(path[i]);
+    pushAvlStep(`Paso intermedio (Doble LR): rotamos a la IZQUIERDA en ${child.val} para alinear la rama.`, [z.left.val, child.val], [z.val]);
+    const ns = rotRightRaw(z); avlRotations++; replaceInParent(z, ns);
+    for (let i = unbIdx - 1; i >= 0; i--) updH(path[i]);
+    pushAvlStep(`Rotación Doble LR completada: rotamos a la DERECHA en ${z.val}. Sube ${ns.val} y queda equilibrado.`, [], [], [ns.val, ns.left?.val, ns.right?.val].filter(Boolean));
+  } else if (fbZ < -1 && fbC > 0) {
+    z.right = rotRightRaw(z.right); avlRotations++;
+    for (let i = unbIdx; i >= 0; i--) updH(path[i]);
+    pushAvlStep(`Paso intermedio (Doble RL): rotamos a la DERECHA en ${child.val} para alinear la rama.`, [z.right.val, child.val], [z.val]);
+    const ns = rotLeftRaw(z); avlRotations++; replaceInParent(z, ns);
+    for (let i = unbIdx - 1; i >= 0; i--) updH(path[i]);
+    pushAvlStep(`Rotación Doble RL completada: rotamos a la IZQUIERDA en ${z.val}. Sube ${ns.val} y queda equilibrado.`, [], [], [ns.val, ns.left?.val, ns.right?.val].filter(Boolean));
+  } else if (fbZ > 1) {
+    const ns = rotRightRaw(z); avlRotations++; replaceInParent(z, ns);
+    for (let i = unbIdx - 1; i >= 0; i--) updH(path[i]);
+    pushAvlStep(`Rotación Simple DERECHA completada en ${z.val}: sube ${ns.val}. Equilibrio restaurado.`, [], [], [ns.val, ns.left?.val, ns.right?.val].filter(Boolean));
+  } else {
+    const ns = rotLeftRaw(z); avlRotations++; replaceInParent(z, ns);
+    for (let i = unbIdx - 1; i >= 0; i--) updH(path[i]);
+    pushAvlStep(`Rotación Simple IZQUIERDA completada en ${z.val}: sube ${ns.val}. Equilibrio restaurado.`, [], [], [ns.val, ns.left?.val, ns.right?.val].filter(Boolean));
+  }
+}
+
+function avlDeleteRec(n, v, st) {
+  if (!n) return null;
+  if (v < n.val) n.left = avlDeleteRec(n.left, v, st);
+  else if (v > n.val) n.right = avlDeleteRec(n.right, v, st);
+  else {
+    st.found = true;
+    if (!n.left || !n.right) return n.left || n.right;
+    let s = n.right; while (s.left) s = s.left;
+    n.val = s.val;
+    n.right = avlDeleteRec(n.right, s.val, { found: false });
+  }
+  updH(n);
+  const fb = getFB(n);
+  if (fb > 1) { if (getFB(n.left) < 0) { n.left = rotLeftRaw(n.left); avlRotations++; } avlRotations++; return rotRightRaw(n); }
+  if (fb < -1) { if (getFB(n.right) > 0) { n.right = rotRightRaw(n.right); avlRotations++; } avlRotations++; return rotLeftRaw(n); }
+  return n;
+}
+
+function avlInsertAction() { stopAllTimers(); const inp = document.getElementById('avl-input'), v = parseInt(inp.value, 10); if (isNaN(v)) return; inp.value = ''; const p = avlSteps.length; avlInsertWithSteps(v); avlStepIdx = p; renderAvlStep(); if (avlSteps.length - p > 1) avlTogglePlay(); }
+function avlInsertRandom() { stopAllTimers(); const ex = new Set(getInOrder(avlRoot)); let v = 10; for (let k = 0; k < 50; k++) { v = Math.floor(Math.random() * 95) + 5; if (!ex.has(v)) break; } const p = avlSteps.length; avlInsertWithSteps(v); avlStepIdx = p; renderAvlStep(); if (avlSteps.length - p > 1) avlTogglePlay(); }
+function avlSearchAction() {
+  stopAllTimers(); const v = parseInt(document.getElementById('avl-input').value, 10); if (isNaN(v) || !avlRoot) return;
+  const p = avlSteps.length; let c = avlRoot, vis = [], ok = false;
+  while (c) {
+    vis.push(c.val);
+    if (v === c.val) { pushAvlStep(`¡ENCONTRADO ${v} en ${vis.length} comparaciones!`, [], [], vis); ok = true; break; }
+    else if (v < c.val) { pushAvlStep(`Buscando ${v}: ${v} < ${c.val} → bajamos a la IZQUIERDA.`, [c.val]); c = c.left; }
+    else { pushAvlStep(`Buscando ${v}: ${v} > ${c.val} → bajamos a la DERECHA.`, [c.val]); c = c.right; }
+  }
+  if (!ok) pushAvlStep(`${v} no existe en el árbol (${vis.length} comparaciones).`, [], vis);
+  avlStepIdx = p; renderAvlStep(); avlTogglePlay();
+}
+function avlDeleteAction() {
+  stopAllTimers(); const inp = document.getElementById('avl-input'), v = parseInt(inp.value, 10); if (isNaN(v) || !avlRoot) return;
+  inp.value = ''; const p = avlSteps.length, st = { found: false };
+  pushAvlStep(`Eliminando ${v} y rebalanceando el Árbol AVL...`, [v]);
+  avlRoot = avlDeleteRec(avlRoot, v, st);
+  pushAvlStep(st.found ? `Nodo ${v} eliminado y árbol rebalanceado en O(log n).` : `El valor ${v} no existía en el árbol.`);
+  avlStepIdx = p; renderAvlStep(); avlTogglePlay();
+}
+function avlInOrderAction() {
+  stopAllTimers(); if (!avlRoot) return;
+  const ord = getInOrder(avlRoot), p = avlSteps.length, acc = [];
+  for (const v of ord) { acc.push(v); pushAvlStep(`Recorrido InOrden (Izq → Nodo → Der): ${v} → [${acc.join(', ')}]`, [v], [], acc.slice(0, -1)); }
+  avlStepIdx = p; renderAvlStep(); avlTogglePlay();
+}
+function avlReset() { stopAllTimers(); avlRoot = null; avlRotations = 0; avlSteps = []; avlStepIdx = -1; document.getElementById('avl-svg').innerHTML = ''; document.getElementById('avl-step-badge').textContent = 'Paso 0/0'; document.getElementById('avl-step-desc').textContent = 'Árbol vacío.'; document.getElementById('avl-stat-nodos').textContent = '0'; document.getElementById('avl-stat-altura').textContent = '0'; document.getElementById('avl-stat-rot').textContent = '0'; document.getElementById('avl-inorder-vals').textContent = '[]'; }
+function avlLoadPreset(arr) { avlReset(); for (const v of arr) avlInsertWithSteps(v); avlStepIdx = 0; renderAvlStep(); avlTogglePlay(); }
+function avlPrevStep() { stopAllTimers(); if (avlStepIdx > 0) { avlStepIdx--; renderAvlStep(); } }
+function avlNextStep() { stopAllTimers(); if (avlStepIdx < avlSteps.length - 1) { avlStepIdx++; renderAvlStep(); } }
+function avlTogglePlay() {
+  if (avlTimer) { clearInterval(avlTimer); avlTimer = null; document.getElementById('avl-play-btn').textContent = '▶ Play'; return; }
+  if (!avlSteps.length) return;
+  if (avlStepIdx >= avlSteps.length - 1) avlStepIdx = 0;
+  document.getElementById('avl-play-btn').textContent = '⏸ Pausa';
+  renderAvlStep();
+  avlTimer = setInterval(() => { if (avlStepIdx < avlSteps.length - 1) { avlStepIdx++; renderAvlStep(); } else { stopAllTimers(); } }, 1150);
+}
+
+function renderAvlStep() {
+  if (avlStepIdx < 0 || avlStepIdx >= avlSteps.length) return;
+  const st = avlSteps[avlStepIdx];
+  document.getElementById('avl-step-badge').textContent = `Paso ${avlStepIdx + 1}/${avlSteps.length}`;
+  document.getElementById('avl-step-desc').textContent = st.desc;
+  document.getElementById('avl-stat-nodos').textContent = countNodes(st.tree);
+  document.getElementById('avl-stat-altura').textContent = getH(st.tree);
+  document.getElementById('avl-stat-rot').textContent = st.rotations;
+  document.getElementById('avl-inorder-vals').textContent = '[' + getInOrder(st.tree).join(', ') + ']';
+  const svg = document.getElementById('avl-svg'); svg.innerHTML = '';
+  if (!st.tree) return;
+
+  const nodes = [], edges = [];
+  function layout(n, d, x1, x2) {
+    if (!n) return null;
+    const x = (x1 + x2) / 2, y = 46 + d * 74, fb = getFB(n);
+    const info = { val: n.val, h: n.h, fb, x, y };
+    nodes.push(info);
+    if (n.left)  { const c = layout(n.left, d + 1, x1, x); edges.push({ x1: x, y1: y, x2: c.x, y2: c.y }); }
+    if (n.right) { const c = layout(n.right, d + 1, x, x2); edges.push({ x1: x, y1: y, x2: c.x, y2: c.y }); }
+    return info;
+  }
+  layout(st.tree, 0, 30, 930);
+
+  let html = '';
+  for (const e of edges) html += `<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="#475569" stroke-width="2.3" />`;
+  for (const n of nodes) {
+    const isDanger = st.dangerVals.includes(n.val) || Math.abs(n.fb) > 1;
+    const isHi = st.highlightVals.includes(n.val);
+    const isOk = st.okVals.includes(n.val);
+    let fill = '#1e3a5f', stroke = '#22c55e';
+    if (isDanger) { fill = '#991b1b'; stroke = '#ef4444'; }
+    else if (isHi) { fill = '#b45309'; stroke = '#f59e0b'; }
+    else if (isOk) { fill = '#166534'; stroke = '#22c55e'; }
+    const fbTxt = n.fb > 0 ? `+${n.fb}` : `${n.fb}`;
+    const fbBg = Math.abs(n.fb) > 1 ? '#ef4444' : '#16a34a';
+    html += `<g>
+      <circle cx="${n.x}" cy="${n.y}" r="22" fill="${fill}" stroke="${stroke}" stroke-width="3" />
+      <text x="${n.x}" y="${n.y + 5}" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Consolas, monospace">${n.val}</text>
+      <rect x="${n.x + 15}" y="${n.y - 28}" width="38" height="17" rx="5" fill="${fbBg}" />
+      <text x="${n.x + 34}" y="${n.y - 16}" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="bold">FB:${fbTxt}</text>
+      <text x="${n.x - 24}" y="${n.y - 16}" text-anchor="end" fill="#94a3b8" font-size="10.5" font-weight="600">h=${n.h}</text>
+    </g>`;
+  }
+  svg.innerHTML = html;
+}
+
+// ==================== HEAP BINARIO ====================
+function setHeapMode(m) {
+  stopAllTimers(); isMaxHeap = m;
+  document.getElementById('btn-maxheap').classList.toggle('active', m);
+  document.getElementById('btn-minheap').classList.toggle('active', !m);
+  if (heapArr.length) heapLoadPreset([...heapArr], m);
+}
+function heapBetter(a, b) { return isMaxHeap ? a > b : a < b; }
+function pushHeapStep(desc, activeIdx = [], swapIdx = [], okIdx = []) { heapSteps.push({ arr: [...heapArr], desc, activeIdx: [...activeIdx], swapIdx: [...swapIdx], okIdx: [...okIdx] }); }
+function heapInsertWithSteps(val) {
+  heapArr.push(val); let i = heapArr.length - 1;
+  pushHeapStep(`Insertamos ${val} al final del arreglo (índice [${i}]). Aplicamos Heapify Up...`, [i]);
+  while (i > 0) {
+    const p = Math.floor((i - 1) / 2);
+    if (heapBetter(heapArr[i], heapArr[p])) {
+      pushHeapStep(`Hijo [${i}]=${heapArr[i]} tiene más prioridad que padre [${p}]=${heapArr[p]} → ¡SWAP!`, [], [i, p]);
+      [heapArr[i], heapArr[p]] = [heapArr[p], heapArr[i]];
+      i = p;
+      pushHeapStep(`${val} subió al índice [${i}].`, [i]);
+    } else {
+      pushHeapStep(`Padre [${p}]=${heapArr[p]} ya respeta la propiedad del ${isMaxHeap ? 'Max-Heap' : 'Min-Heap'}.`, [], [], [i, p]);
+      break;
+    }
+  }
+  if (i === 0 && heapArr.length > 1) pushHeapStep(`${val} llegó a la raíz [0]. Propiedad restaurada.`, [], [], [0]);
+}
+function heapInsertAction() { stopAllTimers(); const inp = document.getElementById('heap-input'), v = parseInt(inp.value, 10); if (isNaN(v)) return; inp.value = ''; const p = heapSteps.length; heapInsertWithSteps(v); heapStepIdx = p; renderHeapStep(); heapTogglePlay(); }
+function heapInsertRandom() { stopAllTimers(); const v = Math.floor(Math.random() * 95) + 5, p = heapSteps.length; heapInsertWithSteps(v); heapStepIdx = p; renderHeapStep(); heapTogglePlay(); }
+function heapExtractAction() {
+  stopAllTimers(); if (!heapArr.length) return;
+  const p = heapSteps.length, rv = heapArr[0], li = heapArr.length - 1;
+  pushHeapStep(`Eliminamos raíz [0]=${rv} (${isMaxHeap ? 'MÁXIMO' : 'MÍNIMO'}) y subimos el último [${li}]=${heapArr[li]}.`, [], [0, li]);
+  if (heapArr.length === 1) { heapArr.pop(); pushHeapStep('Heap vacío.'); }
+  else {
+    heapArr[0] = heapArr.pop(); let i = 0, n = heapArr.length;
+    pushHeapStep(`Raíz provisoria [0]=${heapArr[0]}. Aplicamos Heapify Down...`, [0]);
+    while (true) {
+      let best = i, l = 2 * i + 1, r = 2 * i + 2;
+      if (l < n && heapBetter(heapArr[l], heapArr[best])) best = l;
+      if (r < n && heapBetter(heapArr[r], heapArr[best])) best = r;
+      if (best !== i) {
+        pushHeapStep(`SWAP padre [${i}]=${heapArr[i]} con hijo [${best}]=${heapArr[best]}.`, [], [i, best]);
+        [heapArr[i], heapArr[best]] = [heapArr[best], heapArr[i]]; i = best;
+        pushHeapStep(`Bajó al índice [${i}].`, [i]);
+      } else { pushHeapStep(`Propiedad restaurada. Nueva raíz: ${heapArr[0]}.`, [], [], [0]); break; }
+    }
+  }
+  heapStepIdx = p; renderHeapStep(); heapTogglePlay();
+}
+function heapSearchAction() {
+  stopAllTimers(); const v = parseInt(document.getElementById('heap-input').value, 10); if (isNaN(v) || !heapArr.length) return;
+  const p = heapSteps.length; let ok = false;
+  for (let i = 0; i < heapArr.length; i++) {
+    if (heapArr[i] === v) { pushHeapStep(`Búsqueda O(n): ¡ENCONTRADO ${v} en índice [${i}] (${i+1} pasos)!`, [], [], [i]); ok = true; break; }
+    else pushHeapStep(`Búsqueda O(n): revisando [${i}]=${heapArr[i]} ≠ ${v}...`, [i]);
+  }
+  if (!ok) pushHeapStep(`Búsqueda O(n): ${v} no se encontró en el Heap.`);
+  heapStepIdx = p; renderHeapStep(); heapTogglePlay();
+}
+function heapReset() { stopAllTimers(); heapArr = []; heapSteps = []; heapStepIdx = -1; document.getElementById('heap-svg').innerHTML = ''; document.getElementById('heap-array-container').innerHTML = ''; document.getElementById('heap-stat-n').textContent = '0'; document.getElementById('heap-stat-root').textContent = '-'; document.getElementById('heap-stat-h').textContent = '0'; document.getElementById('heap-step-badge').textContent = 'Paso 0/0'; }
+function heapLoadPreset(vals, m) { stopAllTimers(); isMaxHeap = m; document.getElementById('btn-maxheap').classList.toggle('active', m); document.getElementById('btn-minheap').classList.toggle('active', !m); heapArr = []; heapSteps = []; for (const v of vals) heapInsertWithSteps(v); heapStepIdx = 0; renderHeapStep(); heapTogglePlay(); }
+function heapPrevStep() { stopAllTimers(); if (heapStepIdx > 0) { heapStepIdx--; renderHeapStep(); } }
+function heapNextStep() { stopAllTimers(); if (heapStepIdx < heapSteps.length - 1) { heapStepIdx++; renderHeapStep(); } }
+function heapTogglePlay() {
+  if (heapTimer) { clearInterval(heapTimer); heapTimer = null; document.getElementById('heap-play-btn').textContent = '▶ Play'; return; }
+  if (!heapSteps.length) return;
+  if (heapStepIdx >= heapSteps.length - 1) heapStepIdx = 0;
+  document.getElementById('heap-play-btn').textContent = '⏸ Pausa';
+  renderHeapStep();
+  heapTimer = setInterval(() => { if (heapStepIdx < heapSteps.length - 1) { heapStepIdx++; renderHeapStep(); } else stopAllTimers(); }, 950);
+}
+
+function drawCompleteTreeSVG(svgId, arr, activeIdx, swapIdx, okIdx, sortedFromIdx = null) {
+  const svg = document.getElementById(svgId); svg.innerHTML = '';
+  const n = arr.length; if (!n) return;
+  const coords = [];
+  for (let i = 0; i < n; i++) {
+    const lv = Math.floor(Math.log2(i + 1)), pos = i - (Math.pow(2, lv) - 1), tot = Math.pow(2, lv);
+    coords.push({ x: ((pos + 0.5) / tot) * 900 + 30, y: 40 + lv * 66 });
+  }
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const l = 2 * i + 1, r = 2 * i + 2;
+    const inH = idx => sortedFromIdx === null || idx < sortedFromIdx;
+    if (l < n) html += `<line x1="${coords[i].x}" y1="${coords[i].y}" x2="${coords[l].x}" y2="${coords[l].y}" stroke="${inH(l) ? '#64748b' : '#334155'}" stroke-dasharray="${inH(l) ? '' : '4 4'}" stroke-width="2" />`;
+    if (r < n) html += `<line x1="${coords[i].x}" y1="${coords[i].y}" x2="${coords[r].x}" y2="${coords[r].y}" stroke="${inH(r) ? '#64748b' : '#334155'}" stroke-dasharray="${inH(r) ? '' : '4 4'}" stroke-width="2" />`;
+  }
+  for (let i = 0; i < n; i++) {
+    const isS = sortedFromIdx !== null && i >= sortedFromIdx;
+    let fill = '#1d4ed8', stroke = '#60a5fa', op = '1';
+    if (isS) { fill = '#15803d'; stroke = '#22c55e'; op = '0.42'; }
+    else if (swapIdx.includes(i)) { fill = '#d97706'; stroke = '#fbbf24'; }
+    else if (activeIdx.includes(i)) { fill = '#7c3aed'; stroke = '#a78bfa'; }
+    else if (okIdx.includes(i)) { fill = '#15803d'; stroke = '#4ade80'; }
+    html += `<g opacity="${op}">
+      <circle cx="${coords[i].x}" cy="${coords[i].y}" r="21" fill="${fill}" stroke="${stroke}" stroke-width="3" />
+      <text x="${coords[i].x}" y="${coords[i].y + 5}" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Consolas, monospace">${arr[i]}</text>
+      <text x="${coords[i].x}" y="${coords[i].y - 25}" text-anchor="middle" fill="#94a3b8" font-size="10.5" font-family="Consolas, monospace">[${i}]</text>
+    </g>`;
+  }
+  svg.innerHTML = html;
+}
+
+function renderHeapStep() {
+  if (heapStepIdx < 0 || heapStepIdx >= heapSteps.length) return;
+  const st = heapSteps[heapStepIdx], n = st.arr.length;
+  document.getElementById('heap-step-badge').textContent = `Paso ${heapStepIdx + 1}/${heapSteps.length}`;
+  document.getElementById('heap-step-desc').textContent = st.desc;
+  document.getElementById('heap-stat-n').textContent = n;
+  document.getElementById('heap-stat-root').textContent = n ? st.arr[0] : '-';
+  document.getElementById('heap-stat-h').textContent = n ? Math.floor(Math.log2(n)) + 1 : 0;
+  drawCompleteTreeSVG('heap-svg', st.arr, st.activeIdx, st.swapIdx, st.okIdx, null);
+  const cont = document.getElementById('heap-array-container'); cont.innerHTML = '';
+  st.arr.forEach((v, i) => {
+    const el = document.createElement('div');
+    let cls = 'arr-cell';
+    if (st.swapIdx.includes(i)) cls += ' cell-swap';
+    else if (st.activeIdx.includes(i)) cls += ' cell-active';
+    else if (st.okIdx.includes(i)) cls += ' cell-ok';
+    el.className = cls;
+    el.innerHTML = `<span class="idx">[${i}]</span><span class="val">${v}</span>`;
+    el.onmouseenter = () => {
+      const p = i > 0 ? Math.floor((i - 1) / 2) : null, l = 2 * i + 1 < n ? 2 * i + 1 : null, r = 2 * i + 2 < n ? 2 * i + 2 : null;
+      document.getElementById('heap-formula-hover').textContent =
+        `Índice [${i}] (valor ${v}) → Padre: ${p !== null ? `[${p}]=${st.arr[p]}` : 'Raíz'} | Izq (2i+1): ${l !== null ? `[${l}]=${st.arr[l]}` : 'ninguno'} | Der (2i+2): ${r !== null ? `[${r}]=${st.arr[r]}` : 'ninguno'}`;
+    };
+    cont.appendChild(el);
+  });
+}
+
+// ==================== HEAP SORT ====================
+function generateHeapSortSteps(inp) {
+  hsSteps = []; const a = [...inp], n = a.length;
+  const snap = (phase, desc, activeIdx = [], swapIdx = [], sortedFrom = n) => hsSteps.push({ arr: [...a], phase, desc, activeIdx, swapIdx, sortedFrom });
+  snap(1, `Arreglo desordenado: [${a.join(', ')}]. Comienza FASE 1: Build Max-Heap desde el último padre [${Math.floor(n/2)-1}] hasta la raíz [0].`);
+  function heapify(size, i, ph) {
+    while (true) {
+      let m = i, l = 2 * i + 1, r = 2 * i + 2;
+      if (l < size && a[l] > a[m]) m = l;
+      if (r < size && a[r] > a[m]) m = r;
+      if (m !== i) {
+        snap(ph, `Heapify en [${i}]=${a[i]}: hijo mayor [${m}]=${a[m]} → ¡SWAP [${i}] ↔ [${m}]!`, [], [i, m], size);
+        [a[i], a[m]] = [a[m], a[i]]; i = m;
+        snap(ph, `El valor bajó al índice [${i}].`, [i], [], size);
+      } else break;
+    }
+  }
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) { snap(1, `Fase 1: aplicando Heapify al padre [${i}]=${a[i]}.`, [i], [], n); heapify(n, i, 1); }
+  snap(1, `¡FASE 1 COMPLETADA! Max-Heap armado: [${a.join(', ')}]. El máximo (${a[0]}) quedó en la raíz [0].`, [0], [], n);
+  for (let end = n - 1; end > 0; end--) {
+    snap(2, `Fase 2: intercambiamos la raíz máxima [0]=${a[0]} con el último activo [${end}]=${a[end]}.`, [], [0, end], end + 1);
+    [a[0], a[end]] = [a[end], a[0]];
+    snap(2, `El ${a[end]} quedó FIJO y ORDENADO en [${end}]. Achicamos el Heap a tamaño ${end} y aplicamos Heapify en [0].`, [0], [], end);
+    heapify(end, 0, 2);
+  }
+  snap(2, `¡HEAP SORT COMPLETADO! Arreglo ordenado: [${a.join(', ')}] en O(n log n) y memoria O(1).`, [], [], 0);
+}
+function hsLoad(arr) { stopAllTimers(); generateHeapSortSteps(arr); hsIdx = 0; renderHsStep(); }
+function hsLoadRandom() { hsLoad(Array.from({ length: 9 }, () => Math.floor(Math.random() * 89) + 10)); }
+function hsLoadCustom() { const nums = document.getElementById('hs-custom-input').value.split(/[\s,;]+/).map(x => parseInt(x, 10)).filter(x => !isNaN(x)); if (nums.length >= 2 && nums.length <= 15) hsLoad(nums); }
+function hsGoTo(i) { stopAllTimers(); hsIdx = i; renderHsStep(); }
+function hsPrev() { stopAllTimers(); if (hsIdx > 0) { hsIdx--; renderHsStep(); } }
+function hsNext() { stopAllTimers(); if (hsIdx < hsSteps.length - 1) { hsIdx++; renderHsStep(); } }
+function hsTogglePlay() {
+  if (hsTimer) { clearInterval(hsTimer); hsTimer = null; document.getElementById('hs-play-btn').textContent = '▶ Play Animación'; return; }
+  if (!hsSteps.length) return;
+  if (hsIdx >= hsSteps.length - 1) hsIdx = 0;
+  document.getElementById('hs-play-btn').textContent = '⏸ Pausa';
+  renderHsStep();
+  hsTimer = setInterval(() => { if (hsIdx < hsSteps.length - 1) { hsIdx++; renderHsStep(); } else stopAllTimers(); }, 1100);
+}
+function renderHsStep() {
+  if (hsIdx < 0 || hsIdx >= hsSteps.length) return;
+  const st = hsSteps[hsIdx], b = document.getElementById('hs-phase-badge');
+  b.textContent = st.phase === 1 ? 'FASE 1: Build Max-Heap O(n)' : 'FASE 2: Extracción y Orden O(n log n)';
+  b.className = st.phase === 1 ? 'badge badge-warn' : 'badge badge-ok';
+  document.getElementById('hs-step-badge').textContent = `Paso ${hsIdx + 1}/${hsSteps.length}`;
+  document.getElementById('hs-step-desc').textContent = st.desc;
+  drawCompleteTreeSVG('hs-svg', st.arr, st.activeIdx, st.swapIdx, [], st.sortedFrom);
+  const cont = document.getElementById('hs-array-container'); cont.innerHTML = '';
+  st.arr.forEach((v, i) => {
+    const el = document.createElement('div');
+    let cls = 'arr-cell cell-heap';
+    if (i >= st.sortedFrom) cls = 'arr-cell cell-ok';
+    else if (st.swapIdx.includes(i)) cls = 'arr-cell cell-swap';
+    else if (st.activeIdx.includes(i)) cls = 'arr-cell cell-active';
+    el.className = cls;
+    el.innerHTML = `<span class="idx">[${i}]</span><span class="val">${v}</span>`;
+    cont.appendChild(el);
+  });
+}
+
+// Estado inicial
+avlLoadPreset([60, 40, 70, 30, 45, 50]); stopAllTimers(); avlStepIdx = 0; renderAvlStep();
+heapLoadPreset([9, 3, 5, 1, 4, 2, 7], true); stopAllTimers(); heapStepIdx = 0; renderHeapStep();
+hsLoad([2, 5, 4, 8, 9, 10, 11]);
+</script>
+</body>
+</html>

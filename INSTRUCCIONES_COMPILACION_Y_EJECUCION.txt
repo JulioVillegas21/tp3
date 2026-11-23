@@ -1,0 +1,69 @@
+================================================================================
+UNIVERSIDAD NACIONAL DE VILLA MERCEDES (UNViMe)
+Asignatura : Análisis y Diseño de Algoritmos (2026)
+Trabajo Práctico N° 3 : "Transforma y Conquista"
+================================================================================
+
+CONTENIDO DE LA CARPETA DE ENTREGA ("tp 3")
+-------------------------------------------
+1. tp3_transforma_y_conquista.py
+   Código fuente completo en Python 3 con menú interactivo (opciones a hasta l)
+   y modo automático de demostración (--auto-demo). Incluye documentación
+   detallada de todas las decisiones de diseño, estructuras (Árbol AVL y Heap
+   Binario Max/Min) y algoritmos (Counting Sort, Selection Sort y Heap Sort).
+
+2. tp3_transforma_y_conquista.c
+   Código fuente completo equivalente en lenguaje C estándar (C99/C11),
+   implementando las estructuras con punteros (`struct NodoArbolAVL`) y arreglos
+   dinámicos según lo desarrollado en las diapositivas de la Unidad 6.
+
+3. TP3_TransformaYConquista.exe
+   Archivo ejecutable nativo para Windows (64 bits). Puede abrirse directamente
+   con doble clic sin necesidad de instalar compiladores adicionales.
+
+4. ejecutar_tp3_python.bat
+   Script por lotes (.bat) para abrir directamente el menú interactivo de la
+   versión en Python con codificación UTF-8.
+
+5. Informe_TP3_Transforma_y_Conquista.pdf  /  .docx  /  .md
+   Informe técnico completo con el marco teórico (Unidades 1 a 6), análisis
+   matemático (Series Aritmética, Geométrica y Logarítmica, Cotas O, Omega y
+   Theta), tablas comparativas, tiempos reales medidos empíricamente, gráficos
+   de rendimiento, capturas de pantalla y conclusiones para grandes volúmenes
+   de datos (100.000.000 de elementos).
+
+6. Carpeta "capturas\"
+   Contiene las capturas de pantalla de la ejecución de cada opción del menú
+   interactivo y los gráficos comparativos de rendimiento.
+
+7. Archivos de datos generados por el programa:
+   - Datos.txt               (Archivo de entrada con números aleatorios)
+   - Datos_CountingSort.txt  (Salida ordenada mediante Counting Sort - Opción d)
+   - Datos_SelectionSort.txt (Salida ordenada mediante Selection Sort - Opción e)
+   - Datos_HeapSort.txt      (Salida ordenada mediante Heap Sort - Opción k)
+
+
+================================================================================
+INSTRUCCIONES DE COMPILACIÓN Y EJECUCIÓN
+================================================================================
+
+OPCIÓN 1: EJECUCIÓN DIRECTA EN WINDOWS (EJECUTABLE O SCRIPT .BAT)
+-----------------------------------------------------------------
+- Haga doble clic sobre `TP3_TransformaYConquista.exe` o sobre
+  `ejecutar_tp3_python.bat` para iniciar el menú interactivo en consola.
+
+OPCIÓN 2: EJECUCIÓN DESDE CONSOLA CON PYTHON 3
+----------------------------------------------
+1. Abra una terminal (PowerShell o CMD) en esta carpeta.
+2. Para iniciar el menú interactivo:
+     python tp3_transforma_y_conquista.py
+3. Para ejecutar la batería completa de pruebas de forma automática:
+     python tp3_transforma_y_conquista.py --auto-demo
+
+OPCIÓN 3: COMPILACIÓN Y EJECUCIÓN DEL CÓDIGO EN LENGUAJE C (GCC / MinGW)
+------------------------------------------------------------------------
+1. Para compilar con optimización de nivel 3 (-O3):
+     gcc -O3 tp3_transforma_y_conquista.c -o tp3_c.exe -lm
+2. Para ejecutar el binario compilado:
+     .\tp3_c.exe
+================================================================================
